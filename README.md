@@ -1,5 +1,4 @@
 # Spautofy
-Desktop Spotify r e c o r d e r
 
 #### Note: I need to remove a couple nuget packages that aren't used still
 
