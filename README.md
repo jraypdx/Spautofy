@@ -7,6 +7,9 @@ Spautofy is a simple Desktop player/wrapper around the Spotify web player using 
 ## To get it working you will need to:
  - Sign up for a Spotify developer account and get an API key
  - Add the API key in to a SpotifyAPI_Key.txt file
+ - Add the SpotifyAPI C# nuget package (Includes SpotifyAPI.Web.Auth.dll and SpotifyAPI.Web.dll)
+ - Add the Newtonsoft.JSON nuget package
+ - Add the libmp3lame nuget package
  - Build the project
  - Accept control for your Spotify session from your app
  
