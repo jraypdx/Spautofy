@@ -14,3 +14,16 @@ Spautofy is a simple Desktop player/wrapper around the Spotify web player using 
  - Accept control for your Spotify session from your app
  
 #### The highlight of this app is that it r e c o r d s the songs that play, downloads the cover art for them, and sets the .mp3 tags.  Please note that this is only for personal educational use to learn the Spotify web API and different C# audio tools, and that you take full responsibility for any repurcussions from Spotify.
+
+
+## App screenshots
+
+#### Main start screen
+![Main start screen screenshot](Example_Pics/MainScreen.png)
+
+
+#### Queue (set up by dragging tracks/albums/playlists from the Spotify web app)
+![Queue screenshot](Example_Pics/Queue.png)
+
+#### Playing screen
+![Playing screen screenshot](Example_Pics/Playing.png)
