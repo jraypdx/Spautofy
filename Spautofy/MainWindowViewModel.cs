@@ -21,7 +21,7 @@ namespace Spautofy
 {
     class MainWindowViewModel : ViewModelBase //TODO:  picture isn't changing between queue items, right click remove isn't working either
     {
-        private MainWindowModel _model;
+        private MainWindowModel _model; //Ended up implementing pretty much everything in the VM here...
         private bool IsRecording;
 
         public ICommand RecordButton_Command { get; }
@@ -206,7 +206,7 @@ namespace Spautofy
                             }
                             NowPlayingOutput = "Done";
                         }
-                        else if (queue.Type == QueueItemType.Album)
+                        else if (queue.Type == QueueItemType.Playlist)
                         {
                             var playlist = new Record(queue.GetID(), Record.SpotifyType.playlist);
                             await playlist.WaitForReady();
