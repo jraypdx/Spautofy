@@ -19,7 +19,7 @@ using System.Net;
 
 namespace Spautofy
 {
-    class MainWindowViewModel : ViewModelBase //TODO:  picture isn't changing between queue items, right click remove isn't working either
+    class MainWindowViewModel : ViewModelBase //TODO:  right click remove isn't working, set up way to rearrange queue items
     {
         private MainWindowModel _model; //Ended up implementing pretty much everything in the VM here...
         private bool IsRecording;
@@ -33,7 +33,8 @@ namespace Spautofy
 
         public MainWindowViewModel()
         {
-            SpotifyAuth.SpotifyGetAuth(); //has to pop open a browser to authorize the app each time, only way to do it without backend/server code?
+            //SpotifyAuth.SpotifyGetAuth(); //has to pop open a browser to authorize the app each time, only way to do it without backend/server code?
+            SpotifyAuth.SpotifyGetTokenAuth();
             Process.Start(new ProcessStartInfo("cmd", $"/c start {"https://open.spotify.com/"}")); //open spotify
 
             DisplayImage.img = "spautofy.jpg";
@@ -43,7 +44,7 @@ namespace Spautofy
             GetUserInfo_Command = new DelegateCommand(x => GetUserInfo_Function());
             GetSongInfo_Command = new DelegateCommand(x => GetSongInfo_Function());
             ShowQueue_Command = new DelegateCommand(x => ShowQueue_Function());
-            RemoveItem_Command = new DelegateCommand(x => MessageBox.Show("remove"));
+            RemoveItem_Command = new DelegateCommand(x => ListBoxQueue.Remove((QueueItem)x));
             InfoButton_Command = new DelegateCommand(x => InfoButton_Function());
             Task.Run(async () => await UpdateVolumeBarTask());
         }
@@ -273,7 +274,7 @@ namespace Spautofy
             {
                 MessageBox.Show("Click on the playlist button in the top left, then add music by dragging a song, album, or playist from spotify in to the queue.\n" +
                     "When you're ready to start, close the queue and click the play/pause button below it\n\n" +
-                    "For best results recording, make sure no other sounds play and that you use a good sound card at full volume with Spotify premium sound quality set to highest");
+                    "For best results recording, make sure no other sounds play (mute system sounds and other apps in Windows!) and that you use a good sound card at full volume with Spotify premium sound quality set to highest");
             });
         }
         public async void GetSongInfo_Function()
@@ -480,7 +481,10 @@ namespace Spautofy
                 {
                     var playlist = await SpotifyAuth._spotify.GetPlaylistAsync(ID);
 
-                    toAdd.Artist = playlist.Owner.DisplayName;
+                    if (!String.IsNullOrEmpty(playlist.Owner.DisplayName))
+                        toAdd.Artist = playlist.Owner.DisplayName;
+                    else
+                        toAdd.Artist = "Spotify";
                     toAdd.Title = playlist.Name;
                     toAdd.Type = QueueItemType.Playlist;
                     toAdd.TypeString = "Playlist";
@@ -488,6 +492,10 @@ namespace Spautofy
                     foreach (var i in playlist.Images)
                         if (LargestImage == null || i.Width > LargestImage.Width) LargestImage = i;
 
+                }
+                else if (userDrop.Contains("episode"))
+                {
+                    MessageBox.Show("Podcasts are currently not supported, but may be supported in the future.");
                 }
                 else
                     return; //ignore bad links

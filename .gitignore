@@ -5,6 +5,7 @@
 
 # Spotify API Key
 *SpotifyAPI_Key.txt
+*SpotifyAPI_Secret.txt
 
 # User-specific files
 *.rsuser

@@ -19,7 +19,7 @@
 
             <Grid.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="Remove" CommandParameter="{Binding RelativeSource={RelativeSource self}}" Command="{Binding DataContext.RemoveItem_Command, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ScrollViewer}}}"/>
+                    <MenuItem Header="Remove" CommandParameter="{Binding RelativeSource={RelativeSource self}}" Command="{Binding DataContext.RemoveItem_Command, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBox}}}"/>
                 </ContextMenu>
             </Grid.ContextMenu>
 
