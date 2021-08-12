@@ -320,6 +320,8 @@ namespace Spautofy
                 return false;
             }
 
+            await SpotifyAuth.CheckRefreshToken(DurationMS);
+
             TempFilePath = Path.Combine(WorkingDir, "temp.wav");
             var capture = new WasapiLoopbackCapture();
             var writer = new WaveFileWriter(TempFilePath, capture.WaveFormat);

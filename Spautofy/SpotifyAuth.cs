@@ -9,16 +9,16 @@ namespace Spautofy
 {
     class SpotifyAuth
     {
-        public static ImplicitGrantAuth ImplicitAuth;
-        public static AuthorizationCodeAuth CodeAuth;
-
-        public static string _RefreshToken;
         public static SpotifyWebAPI _spotify = null;
+        public static AuthorizationCodeAuth CodeAuth;
+        //public static ImplicitGrantAuth ImplicitAuth;
+
+        private static Token _Token;
 
         private static string refreshTokenFile = "SpotifyAPI_RefreshToken.txt";
 
 
-        public static async void SpotifyGetAuth()
+        /*public static async void SpotifyGetAuth()
         {
             string _clientId = File.ReadAllText("SpotifyAPI_Key.txt");
             ImplicitAuth = new ImplicitGrantAuth(
@@ -46,7 +46,7 @@ namespace Spautofy
             };
             ImplicitAuth.Start(); // Starts an internal HTTP Server
             ImplicitAuth.OpenBrowser();
-        }
+        }*/
 
         public static async void SpotifyGetTokenAuth()
         {
@@ -54,7 +54,7 @@ namespace Spautofy
             string _secret = File.ReadAllText("SpotifyAPI_Secret.txt");
 
             //https://johnnycrazy.github.io/SpotifyAPI-NET/docs/5.1.1/auth/authorization_code
-            var CodeAuth = new AuthorizationCodeAuth(
+            CodeAuth = new AuthorizationCodeAuth(
                 _clientId,
                 _secret,
                 "http://localhost:6969/",
@@ -67,52 +67,71 @@ namespace Spautofy
                 Scope.UserReadPlaybackState | //get info on current playing stuff - also important
                 Scope.PlaylistModifyPrivate | //change and create playlists - only needed if we implement something for creating custom playlists through spotify (not likely?) - not used atm
                 Scope.UserLibraryRead //Check/get saved albums/tracks - not used atm
-                );
+            );
 
             CodeAuth.AuthReceived += async (sender, payload) =>
             {
                 CodeAuth.Stop();
-                Token token = await CodeAuth.ExchangeCode(payload.Code);
+                _Token = await CodeAuth.ExchangeCode(payload.Code);
+                File.WriteAllText(refreshTokenFile, _Token.RefreshToken);
 
                 _spotify = new SpotifyWebAPI()
                 {
-                    TokenType = token.TokenType,
-                    AccessToken = token.AccessToken
+                    TokenType = _Token.TokenType,
+                    AccessToken = _Token.AccessToken
                 };
-
-                RefreshCycle(token);
+                //System.Windows.MessageBox.Show($"AuthReceived, RefreshToken:{_Token.RefreshToken}");
+                //RefreshCycle(token);
             };
 
-            //Load the refresh token from file if it exists
-            if (File.Exists(refreshTokenFile))
+            //Load the refresh token from file if it exists - otherwise we have to launch a web page to get the token
+            /*if (File.Exists(refreshTokenFile))
             {
-                string _RefreshToken = File.ReadAllText(refreshTokenFile);
-                
-                if (!string.IsNullOrEmpty(_RefreshToken))
+                string refreshToken = File.ReadAllText(refreshTokenFile);
+
+                if (!string.IsNullOrEmpty(refreshToken))
                 {
-                    Token token = await CodeAuth.RefreshToken(_RefreshToken);
+                    _Token = await CodeAuth.RefreshToken(refreshToken);
+                    System.Windows.MessageBox.Show($"File, RefreshToken:{_Token.RefreshToken}\bError:{_Token.Error}\n{_Token.ErrorDescription}\n{_Token.AccessToken}\n{_Token.TokenType}\n{_Token.ExpiresIn}");
+                    File.WriteAllText(refreshTokenFile, _Token.RefreshToken);
+
                     _spotify = new SpotifyWebAPI()
                     {
-                        TokenType = token.TokenType,
-                        AccessToken = token.AccessToken
+                        TokenType = _Token.TokenType,
+                        AccessToken = _Token.AccessToken
                     };
 
-                    RefreshCycle(token);
+                    //RefreshCycle(token);
                 }
-                else
+                else //Blank file is getting saved sometimes, using this until I figure out why a refresh token isn't retrieved
                 {
                     CodeAuth.Start();
                     CodeAuth.OpenBrowser();
                 }
             }
             else
-            {
-                CodeAuth.Start();
-                CodeAuth.OpenBrowser();
-            }
+            {*/
+            CodeAuth.Start();
+            CodeAuth.OpenBrowser();
+            //}
         }
 
-        private static async void RefreshCycle(Token token)
+        /// <summary>
+        /// Check if the token needs to be refreshed to be able to play a song
+        /// </summary>
+        public static async Task CheckRefreshToken(int songMS)
+        {
+            //If the token lasts longer than the song length + 5 minutes there is no need to refresh it
+            if (_Token.ExpiresIn > (songMS + System.TimeSpan.FromMinutes(5).TotalMilliseconds))
+                return;
+            _Token = await CodeAuth.RefreshToken(_Token.RefreshToken);
+            _Token.RefreshToken = _Token.RefreshToken;
+            File.WriteAllText(refreshTokenFile, _Token.RefreshToken);
+            _spotify.TokenType = _Token.TokenType;
+            _spotify.AccessToken = _Token.AccessToken;
+        }
+
+        /*private static async void RefreshCycle(Token token)
         {
             _RefreshToken = token.RefreshToken;
             File.WriteAllText(refreshTokenFile, _RefreshToken);
@@ -133,7 +152,8 @@ namespace Spautofy
 
                 File.WriteAllText(refreshTokenFile, _RefreshToken);
             }
-        }
+        }*/
+
     }
 }
 
