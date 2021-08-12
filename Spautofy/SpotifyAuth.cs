@@ -4,6 +4,7 @@ using SpotifyAPI.Web;
 using SpotifyAPI.Web.Enums;
 using SpotifyAPI.Web.Models;
 using System.Threading.Tasks;
+using System;
 
 namespace Spautofy
 {
@@ -14,6 +15,7 @@ namespace Spautofy
         //public static ImplicitGrantAuth ImplicitAuth;
 
         private static Token _Token;
+        private static DateTime _Expires;
 
         private static string refreshTokenFile = "SpotifyAPI_RefreshToken.txt";
 
@@ -73,6 +75,7 @@ namespace Spautofy
             {
                 CodeAuth.Stop();
                 _Token = await CodeAuth.ExchangeCode(payload.Code);
+                _Expires = DateTime.Now.AddSeconds(_Token.ExpiresIn);
                 File.WriteAllText(refreshTokenFile, _Token.RefreshToken);
 
                 _spotify = new SpotifyWebAPI()
@@ -121,11 +124,13 @@ namespace Spautofy
         /// </summary>
         public static async Task CheckRefreshToken(int songMS)
         {
+            //System.Windows.MessageBox.Show($"{DateTime.Now.AddMilliseconds(songMS).AddMinutes(5).ToLongTimeString()}\n{_Expires.ToLongTimeString()}");
             //If the token lasts longer than the song length + 5 minutes there is no need to refresh it
-            if (_Token.ExpiresIn > (songMS + System.TimeSpan.FromMinutes(5).TotalMilliseconds))
+            if (DateTime.Now.AddMilliseconds(songMS).AddMinutes(5) < _Expires)
                 return;
+
             _Token = await CodeAuth.RefreshToken(_Token.RefreshToken);
-            _Token.RefreshToken = _Token.RefreshToken;
+            _Expires = DateTime.Now.AddSeconds(_Token.ExpiresIn);
             File.WriteAllText(refreshTokenFile, _Token.RefreshToken);
             _spotify.TokenType = _Token.TokenType;
             _spotify.AccessToken = _Token.AccessToken;
