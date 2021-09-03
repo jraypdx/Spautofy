@@ -1,5 +1,5 @@
 ﻿using NAudio.Wave;
-using SpotifyAPI.Web.Models;
+using SpotifyAPI.Web;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -68,7 +68,7 @@ namespace Spautofy
         private async Task GetDevice()
         {
             UserWebDevice = null;
-            var devices = await SpotifyAuth._spotify.GetDevicesAsync();
+            var devices = await SpotifyAuth._spotify.Player.GetAvailableDevices();
             if (devices == null || devices.Devices == null)
             {
                 Task.Run(() => MessageBox.Show("Unable to find a Spotify device to play on\nGetDevices did not return anything\nMake sure spotify web page is still open, and pause/play a song and try again"));
@@ -141,7 +141,7 @@ namespace Spautofy
             {
                 try
                 {
-                    _SingleSong = await SpotifyAuth._spotify.GetTrackAsync(ID);
+                    _SingleSong = await SpotifyAuth._spotify.Tracks.Get(ID);
                     Title = _SingleSong.Name;
                     _Artists = _SingleSong.Artists;
                     DurationMS = _SingleSong.DurationMs;
@@ -166,7 +166,7 @@ namespace Spautofy
                 try
                 {
                     MultiID = ID;
-                    _FullAlbum = await SpotifyAuth._spotify.GetAlbumAsync(ID);
+                    _FullAlbum = await SpotifyAuth._spotify.Albums.Get(ID);
                     Album = _FullAlbum.Name;
                     _Artists = _FullAlbum.Artists;
 
@@ -191,12 +191,12 @@ namespace Spautofy
                 try
                 {
                     MultiID = ID;
-                    _FullPlaylist = await SpotifyAuth._spotify.GetPlaylistAsync(ID);
+                    _FullPlaylist = await SpotifyAuth._spotify.Playlists.Get(ID);
                     //Album = _FullAlbum.Name;
 
                     _PlaylistSongs = new List<FullTrack>();
                     foreach (var song in _FullPlaylist.Tracks.Items)
-                        _PlaylistSongs.Add(song.Track);
+                        _PlaylistSongs.Add((FullTrack)song.Track);
 
                     TotalNumberOfTracks = _PlaylistSongs.Count();
                     CurrentTrackIndex = 0;
@@ -320,16 +320,24 @@ namespace Spautofy
                 return false;
             }
 
-            await SpotifyAuth.CheckRefreshToken(DurationMS);
+            //await SpotifyAuth.CheckRefreshToken(DurationMS);
 
             TempFilePath = Path.Combine(WorkingDir, "temp.wav");
             var capture = new WasapiLoopbackCapture();
             var writer = new WaveFileWriter(TempFilePath, capture.WaveFormat);
             int seconds = DurationMS / 1000 + 1;
 
-            var res = await SpotifyAuth._spotify.ResumePlaybackAsync(UserWebDevice.Id, "", new List<string>() { "spotify:track:" + ID }, "", 0);
-            if (res.Error != null)
-                Task.Run(() => MessageBox.Show($"Spotify API error: {res.Error.Message}\n{res.Error.Status}"));
+            var res = await SpotifyAuth._spotify.Player.ResumePlayback(new PlayerResumePlaybackRequest {
+                DeviceId = UserWebDevice.Id,
+                //ContextUri = "",
+                //OffsetParam = new PlayerResumePlaybackRequest.Offset { Position = 0, Uri = "" },
+                Uris = new List<string>() { "spotify:track:" + ID },
+                PositionMs = 0
+            });
+            if (res == false)
+            {
+                Task.Run(() => MessageBox.Show($"Spotify API error when starting new track"));
+            }
 
             capture.DataAvailable += (s, a) =>
             {
@@ -354,9 +362,9 @@ namespace Spautofy
                 await Task.Delay(500);
             }
             
-            var pause = await SpotifyAuth._spotify.PausePlaybackAsync();
-            if (pause.Error != null)
-                Console.WriteLine(pause.Error.Message);
+            var pause = await SpotifyAuth._spotify.Player.PausePlayback();
+            if (pause == false)
+                Console.WriteLine("Error pausing playback?");
 
             return true;
         }

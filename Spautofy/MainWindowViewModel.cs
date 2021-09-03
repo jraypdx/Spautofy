@@ -11,7 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using SpotifyAPI.Web.Models;
 using SpotifyAPI.Web;
 using System.IO;
 using System.Diagnostics;
@@ -248,17 +247,16 @@ namespace Spautofy
             else
                 Queue_Visibility = Visibility.Collapsed;
         }
-        public void GetUserInfo_Function()
+        public async void GetUserInfo_Function()
         {
             try
             {
-                PrivateProfile temp = SpotifyAuth._spotify.GetPrivateProfile();
+                PrivateUser temp = await SpotifyAuth._spotify.UserProfile.Current();
                 string outString = $"Name: {temp.DisplayName}\n" +
                     $"Type: {temp.Type}\n" +
                     $"Uri: {temp.Uri}\n" +
                     $"ID: {temp.Id}\n" +
                     $"Country: {temp.Country}\n" +
-                    $"Birthdate: {temp.Birthdate}\n" +
                     $"Email: {temp.Email}\n";
                 SpotifyTextoutput = outString;
             }
@@ -279,12 +277,12 @@ namespace Spautofy
         }
         public async void GetSongInfo_Function()
         {
-            PlaybackContext temp = null;
+            //PlaybackState temp;
             try
             {
                 //var song = await SpotifyAuth._spotify.GetPlayingTrackAsync();
-                temp = SpotifyAuth._spotify.GetPlayback();
-                var song = temp.Item;
+                var temp = await SpotifyAuth._spotify.Player.GetCurrentlyPlaying(new PlayerCurrentlyPlayingRequest());
+                var song = (FullTrack)temp.Item;
                 string outString = $"{song.Name}\n" +
                     $"{song.Artists}\n" +
                     $"{temp.CurrentlyPlayingType}\n" +
@@ -298,7 +296,7 @@ namespace Spautofy
             }
             catch (Exception ex)
             {
-                SpotifyTextoutput = $"{temp?.Error.Message}";
+                SpotifyTextoutput = $"Error retrieving the currently playing track!";
                 //SpotifyAuth.SpotifyGetAuth();
                 //GetSongInfo_Function();
             }
@@ -340,7 +338,7 @@ namespace Spautofy
             {
                 if (linkWithID.Contains("track"))
                 {
-                    var track = await SpotifyAuth._spotify.GetTrackAsync(ID);
+                    var track = await SpotifyAuth._spotify.Tracks.Get(ID);
                     var artists = new List<string>();
                     foreach (var a in track.Artists)
                         artists.Add(a.Name);
@@ -362,7 +360,7 @@ namespace Spautofy
                 }
                 else if (linkWithID.Contains("album"))
                 {
-                    var album = await SpotifyAuth._spotify.GetAlbumAsync(ID);
+                    var album = await SpotifyAuth._spotify.Albums.Get(ID);
                     var artists = new List<string>();
                     foreach (var a in album.Artists)
                         artists.Add(a.Name);
@@ -387,7 +385,7 @@ namespace Spautofy
                 }
                 else if (linkWithID.Contains("playlist"))
                 {
-                    var playlist = await SpotifyAuth._spotify.GetPlaylistAsync(ID);
+                    var playlist = await SpotifyAuth._spotify.Playlists.Get(ID);
 
                     Image OwnerImage = null;
 
@@ -449,7 +447,7 @@ namespace Spautofy
             {
                 if (userDrop.Contains("track"))
                 {
-                    var track = await SpotifyAuth._spotify.GetTrackAsync(ID);
+                    var track = await SpotifyAuth._spotify.Tracks.Get(ID);
 
                     foreach (var a in track.Artists)
                         artists.Add(a.Name);
@@ -464,7 +462,7 @@ namespace Spautofy
                 }
                 else if (userDrop.Contains("album"))
                 {
-                    var album = await SpotifyAuth._spotify.GetAlbumAsync(ID);
+                    var album = await SpotifyAuth._spotify.Albums.Get(ID);
 
                     foreach (var a in album.Artists)
                         artists.Add(a.Name);
@@ -479,7 +477,7 @@ namespace Spautofy
                 }
                 else if (userDrop.Contains("playlist"))
                 {
-                    var playlist = await SpotifyAuth._spotify.GetPlaylistAsync(ID);
+                    var playlist = await SpotifyAuth._spotify.Playlists.Get(ID);
 
                     if (!String.IsNullOrEmpty(playlist.Owner.DisplayName))
                         toAdd.Artist = playlist.Owner.DisplayName;

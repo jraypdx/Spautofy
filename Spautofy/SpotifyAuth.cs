@@ -1,23 +1,23 @@
 ﻿using System.IO;
 using SpotifyAPI.Web.Auth;
 using SpotifyAPI.Web;
-using SpotifyAPI.Web.Enums;
-using SpotifyAPI.Web.Models;
 using System.Threading.Tasks;
 using System;
+using SpotifyAPI.Web.Http;
 
 namespace Spautofy
 {
     class SpotifyAuth
     {
-        public static SpotifyWebAPI _spotify = null;
-        public static AuthorizationCodeAuth CodeAuth;
+        public static SpotifyClient _spotify = null;
+        public static AuthorizationCodeAuthenticator CodeAuth;
         //public static ImplicitGrantAuth ImplicitAuth;
 
-        private static Token _Token;
+        private static AuthorizationCodeTokenResponse _Token;
         private static DateTime _Expires;
 
         private static string refreshTokenFile = "SpotifyAPI_RefreshToken.txt";
+        private static IAPIConnector config;
 
 
         /*public static async void SpotifyGetAuth()
@@ -55,8 +55,38 @@ namespace Spautofy
             string _clientId = File.ReadAllText("SpotifyAPI_Key.txt");
             string _secret = File.ReadAllText("SpotifyAPI_Secret.txt");
 
+            var server = new EmbedIOAuthServer(new Uri("http://localhost:6969/"), 6969);
+            server.AuthorizationCodeReceived += async (sender, response) =>
+            {
+                await server.Stop();
+                _Token = await new OAuthClient().RequestToken(new AuthorizationCodeTokenRequest(
+                  _clientId, _secret, response.Code, server.BaseUri
+                ));
+
+                var config = SpotifyClientConfig.CreateDefault().WithAuthenticator(new AuthorizationCodeAuthenticator(_clientId, _secret, _Token));
+                _spotify = new SpotifyClient(config);
+                File.WriteAllText(refreshTokenFile, _Token.RefreshToken);
+            };
+            await server.Start();
+            
+            var loginRequest = new LoginRequest(server.BaseUri, _clientId, LoginRequest.ResponseType.Code)
+            {
+                Scope = new[]
+                {
+                    Scopes.UserReadPrivate, //User info (name, email, etc.) probably not needed long term, using for testing
+                    Scopes.UserReadRecentlyPlayed, //get list of recently played tracks - not used atm
+                    Scopes.PlaylistReadPrivate, //read playlists
+                    Scopes.UserReadCurrentlyPlaying, //current song info - also important
+                    Scopes.UserModifyPlaybackState, //pause, play, seek, skip, add to queue - most important permission
+                    Scopes.UserReadPlaybackState, //get info on current playing stuff - also important
+                    Scopes.PlaylistModifyPrivate, //change and create playlists - only needed if we implement something for creating custom playlists through spotify (not likely?) - not used atm
+                    Scopes.UserLibraryRead //Check/get saved albums/tracks - not used atm
+                }
+            };
+            BrowserUtil.Open(loginRequest.ToUri());
+
             //https://johnnycrazy.github.io/SpotifyAPI-NET/docs/5.1.1/auth/authorization_code
-            CodeAuth = new AuthorizationCodeAuth(
+            /*CodeAuth = new AuthorizationCodeAuthenticator(
                 _clientId,
                 _secret,
                 "http://localhost:6969/",
@@ -85,7 +115,7 @@ namespace Spautofy
                 };
                 //System.Windows.MessageBox.Show($"AuthReceived, RefreshToken:{_Token.RefreshToken}");
                 //RefreshCycle(token);
-            };
+            };*/
 
             //Load the refresh token from file if it exists - otherwise we have to launch a web page to get the token
             /*if (File.Exists(refreshTokenFile))
@@ -114,27 +144,36 @@ namespace Spautofy
             }
             else
             {*/
-            CodeAuth.Start();
-            CodeAuth.OpenBrowser();
+            //CodeAuth.Start();
+            //CodeAuth.OpenBrowser();
             //}
         }
 
         /// <summary>
         /// Check if the token needs to be refreshed to be able to play a song
         /// </summary>
-        public static async Task CheckRefreshToken(int songMS)
+        /*public static async Task CheckRefreshToken(int songMS)
         {
+            string _clientId = File.ReadAllText("SpotifyAPI_Key.txt");
+            string _secret = File.ReadAllText("SpotifyAPI_Secret.txt");
+
             //System.Windows.MessageBox.Show($"{DateTime.Now.AddMilliseconds(songMS).AddMinutes(5).ToLongTimeString()}\n{_Expires.ToLongTimeString()}");
             //If the token lasts longer than the song length + 5 minutes there is no need to refresh it
             if (DateTime.Now.AddMilliseconds(songMS).AddMinutes(5) < _Expires)
                 return;
 
-            _Token = await CodeAuth.RefreshToken(_Token.RefreshToken);
+            var refreshResponse = await new OAuthClient().RequestToken(
+                new AuthorizationCodeRefreshRequest(_clientId, _secret, _Token.RefreshToken)
+            );
+            _Token = refreshResponse.
+
+
+            _Token = await CodeAuth.(_Token.RefreshToken);
             _Expires = DateTime.Now.AddSeconds(_Token.ExpiresIn);
             File.WriteAllText(refreshTokenFile, _Token.RefreshToken);
             _spotify.TokenType = _Token.TokenType;
             _spotify.AccessToken = _Token.AccessToken;
-        }
+        }*/
 
         /*private static async void RefreshCycle(Token token)
         {
